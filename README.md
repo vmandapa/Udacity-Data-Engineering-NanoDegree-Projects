@@ -1,31 +1,59 @@
-# Data Engineering Projects
 
-Link : https://github.com/vmandapa/Udacity-Data-Engineering-NanoDegree-Projects/blob/main/image.jpeg
+# Project - Data Lake
+A music streaming startup, Sparkify, has grown their user base and song database even more and want to move their data warehouse to a data lake. Their data resides in S3, in a directory of JSON logs on user activity on the app, as well as a directory with JSON metadata on the songs in their app.
 
-## Project 1: Data Modeling with Postgres
-In this project, we apply Data Modeling with Postgres and build an ETL pipeline using Python. A startup wants to analyze the data they've been collecting on songs and user activity on their new music streaming app. Currently, they are collecting data in json format and the analytics team is particularly interested in understanding what songs users are listening to.
+In this project, we will build an ETL pipeline for a data lake hosted on S3. We will load data from S3, process the data into analytics tables using Spark, and load them back into S3. We will deploy this Spark process on a cluster using AWS.
 
-## Project 2: Data Modeling with Cassandra
-In this project, we apply Data Modeling with Cassandra and build an ETL pipeline using Python. We will build a Data Model around our queries that we want to get answers for. 
-For our use case we want below answers: 
+## Deployement
 
- - Get details of a song that was herad on the music app history during a particular session. 
- - Get songs played by a user during particular session on music app. 
-  - Get all users from the music app history who listened to a particular song.
+File `dl.cfg` is not provided here. File contains :
 
-## Project 3: Data Warehouse
-In this project, we apply the Data Warehouse architectures we learnt and build a Data Warehouse on AWS cloud. We build an ETL pipeline to extract and transform data stored in json format in s3 buckets and move the data to Warehouse hosted on Amazon Redshift. 
 
-## Project 4: Data Lake
-In this project, we will build a Data Lake on AWS cloud using Spark and AWS EMR cluster. The data lake will serve as a Single Source of Truth for the Analytics Platform. We will write spark jobs to perform ELT operations that picks data from landing zone on S3 and transform and stores data on the S3 processed zone.
+```
+KEY=YOUR_AWS_ACCESS_KEY
+SECRET=YOUR_AWS_SECRET_KEY
+```
 
-## Project 5: Data Pipelines with Airflow
-In this project, we will orchestrate our Data Pipeline workflow using an open-source Apache project called Apache Airflow. We will schedule our ETL jobs in Airflow, create project related custom plugins and operators and automate the pipeline execution. 
+If you are using local as your development environemnt - Moving project directory from local to EMR 
 
-## Project 6: Api Data to Postgres
-In this project, we build an etl pipeline to fetch data from yelp API and insert it into the Postgres Database. This project is a very basic example of fetching real time data from an open source API.
 
-## CAPSTONE PROJECT
-Udacity provides their own crafted Capstone project with dataset that include data on immigration to the United States, and supplementary datasets that include data on airport codes, U.S. city demographics, and temperature data.
-  
-I worked on my own open-ended project. <br />
+ 
+
+     scp -i <.pem-file> <Local-Path> <username>@<EMR-MasterNode-Endpoint>:~<EMR-path>
+
+Running spark job (Before running job make sure EMR Role have access to s3)
+
+    spark-submit etl.py --master yarn --deploy-mode client --driver-memory 4g --num-executors 2 --executor-memory 2g --executor-core 2
+
+## ETL Pipeline
+    
+1.  Read data from S3
+    
+    -   Song data:  `s3://udacity-dend/song_data`
+    -   Log data:  `s3://udacity-dend/log_data`
+    
+    The script reads song_data and load_data from S3.
+    
+3.  Process data using spark
+    
+    Transforms them to create five different tables listed below : 
+    #### Fact Table
+	 **songplays**  - records in log data associated with song plays i.e. records with page  `NextSong`
+    -   _songplay_id, start_time, user_id, level, song_id, artist_id, session_id, location, user_agent_
+
+	#### Dimension Tables
+	 **users**  - users in the app
+		Fields -   _user_id, first_name, last_name, gender, level_
+		
+	 **songs**  - songs in music database
+    Fields - _song_id, title, artist_id, year, duration_
+    
+	**artists**  - artists in music database
+    Fields -   _artist_id, name, location, lattitude, longitude_
+    
+	  **time**  - timestamps of records in  **songplays**  broken down into specific units
+    Fields -   _start_time, hour, day, week, month, year, weekday_
+    
+4.  Load it back to S3
+    
+    Writes them to partitioned parquet files in table directories on S3.
